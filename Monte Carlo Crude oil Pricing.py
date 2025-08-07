@@ -159,9 +159,7 @@ def create_profitability_summary_table(results: dict, option_premium: float) -> 
     return summary_df
 
 
-    # ===================================================================
-    # NEW: STEP 5 - PROFITABILITY ANALYSIS
-    # ===================================================================
+    
     print("\nSTEP 5: PROFITABILITY ANALYSIS")
     print("-" * 30)
     
@@ -370,6 +368,10 @@ class MonteCarloEngine:
         self.r = risk_free_rate
         self.sigma = volatility
         
+
+        
+
+        
         # Validate inputs
         self._validate_parameters()
     
@@ -464,6 +466,7 @@ class MonteCarloEngine:
             'itm_probability': itm_probability,
             'mean_payoff': mean_payoff,
             'discount_factor': discount_factor
+
         }
         
         print(f"✓ Monte Carlo option price: ${option_price:.4f}")
@@ -649,9 +652,10 @@ def main():
     print("=" * 60)
     
     # Project parameters
-    SPOT_PRICE = 66.55  # $70/bbl
+    SPOT_PRICE = 66.0 # $70/bbl
     STRIKE_PRICE = 68.0  # $80/bbl
-    TIME_TO_EXPIRY = 105/252  # 180 trading days ≈ 0.71 years
+    TIME_TO_EXPIRY = 105/365
+    market_option_price = 1.23
     
     # Step 1: Data Preparation
     print("\nSTEP 1: DATA PREPARATION")
@@ -729,17 +733,39 @@ def main():
     
     # Extract final prices from Monte Carlo paths
     final_prices = paths[:, -1]
+
+
     
-    # Use Black-Scholes price as the option premium (market price proxy)
-    option_premium = bs_price
+
+
+
+    # NEW: Choose which price to use for analysis
+    if market_option_price is not None:
+        option_premium = market_option_price
+        print(f"Using MARKET PRICE: ${market_option_price:.4f} (from option listing)")
     
-    # Perform profitability analysis
+        # Show comparison with theoretical price
+        price_diff = market_option_price - bs_price
+        price_diff_pct = (price_diff / bs_price) * 100
+        print(f"Black Scholes Price: ${bs_price:.4f}")
+        print(f"Price Difference: ${price_diff:.4f} ({price_diff_pct:+.2f}%)")
+    
+        if abs(price_diff_pct) > 10:
+            print("⚠️  Market price differs significantly from theoretical value!")
+    else:
+        option_premium = bs_price
+        print(f"Using THEORETICAL PRICE: ${bs_price:.4f} (Black-Scholes)")
+
     profitability_results = add_profitability_analysis(
         final_prices=final_prices,
         strike_price=STRIKE_PRICE,
-        option_premium=option_premium,
+        option_premium = option_premium,
         paths=paths
     )
+
+
+
+
     
     # Create summary table
     summary_table = create_profitability_summary_table(profitability_results, option_premium)
